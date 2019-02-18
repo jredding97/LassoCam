@@ -7,46 +7,38 @@ import time
 import cv2
 
 # Argument parsing
-ap = argparse.ArgumentParser()
-ap.add_argument(
-	"-v", "--video", type=str, help="path to input video file"
+argParser = argparse.ArgumentParser()
+argParser.add_argument(
+	"-v", "--video", type=str, help="Path to video (Defaults to webcam)"
 )
-ap.add_argument(
-	"-t", "--tracker", type=str, default="kcf", help="OpenCV object tracker type"
+argParser.add_argument(
+	"-t", "--tracker", type=str, default="kcf", help="OpenCV tracker type (Defaults to KCF)"
 )
 
-args = vars(ap.parse_args())
+args = vars(argParser.parse_args())
 
 # Get OpenCV version info
-(major, minor) = cv2.__version__.split(".")[:2]
+print("Currently using OpenCV version " + cv2.__version__ + "\n")
 
-# If we are using OpenCV 3.2 OR BEFORE, we can use special factory
-# function to generate an object tracker
-if int(major) == 3 and int(minor) < 3:
-	tracker = cv2.Tracker_create(args["tracker"].upper())
+# Make dictionary for tracker algorithms
+OPENCV_OBJECT_TRACKERS = {
+	"csrt": cv2.TrackerCSRT_create,
+	"kcf": cv2.TrackerKCF_create,
+	"boosting": cv2.TrackerBoosting_create,
+	"mil": cv2.TrackerMIL_create,
+	"tld": cv2.TrackerTLD_create,
+	"medianflow": cv2.TrackerMedianFlow_create,
+	"mosse": cv2.TrackerMOSSE_create
+}
 	
-# Otherwise, for OpenCV 3.3 OR NEWER, we need to explicitly call the
-# appropriate object tracker constructor
-else:
-	# Dictionary of function mappings
-	OPENCV_OBJECT_TRACKERS = {
-		"csrt": cv2.TrackerCSRT_create,
-		"kcf": cv2.TrackerKCF_create,
-		"boosting": cv2.TrackerBoosting_create,
-		"mil": cv2.TrackerMIL_create,
-		"tld": cv2.TrackerTLD_create,
-		"medianflow": cv2.TrackerMedianFlow_create,
-		"mosse": cv2.TrackerMOSSE_create
-	}
-	
-	# Use arg to generate correct tracker
-	tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
+# Generate tracker based on input
+tracker = OPENCV_OBJECT_TRACKERS[args["tracker"]]()
 	
 # Initialize bounding box coordinates of object
 initBB = None
 
-# If no video path, grab reference to web cam
-if not args.get("video", False):
+# If no video path, webcam
+if args.get("video") is None:
 	print("[INFO] Starting video stream...")
 	vs = VideoStream(src=0).start()
 	time.sleep(1.0)
@@ -64,7 +56,7 @@ while True:
 	frame = vs.read()
 	frame = frame[1] if args.get("video", False) else frame
 	
-	# Check to see if end of stream
+	# Kill if end
 	if frame is None:
 		break
 		
