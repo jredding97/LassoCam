@@ -20,10 +20,10 @@ while True:
   while True:
     data = conn.recv(BUFSIZE)
     if not data: break
-    print (data)
+    print ("".join(map(chr, data)))
     print ('writing file ....')
 
-  myfile.close()
+  #myfile.close()
   print ('finished writing file')
-  conn.close()
+  #conn.close()
   print ('client disconnected')
