@@ -1,6 +1,6 @@
 import socket
 
-HOST = 'localhost'
+HOST = '10.0.0.188'
 PORT = 9876
 ADDR = (HOST,PORT)
 BUFSIZE = 4096
@@ -10,9 +10,8 @@ sendStr = "Ocean man, take me by the hand lead me to the land (that you understa
 print(len(sendStr))
 #print (len(bytes))
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(ADDR)
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.connect(ADDR)
 
-client.send(sendStr)
-
-client.close()
+    s.sendall(b'ocean man, take me by the hand lead me to the land')
+    data = s.recv(4096)
