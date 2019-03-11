@@ -5,17 +5,9 @@ import time
 import cv2
 
 class ObjectTracker:
-
-	presenterBB = None
-	laserBB = None
-	tracker_name = "csrt"
-	tracker = None
-	frame = None
-	info = None
-	
 			
-	def tracker_dict(self, tracker_name):
-		OPENCV_OBJECT_TRACKERS = {
+	def spawn_tracker(self, tracker_name):
+		availableTrackers = {
 			"csrt": cv2.TrackerCSRT_create,
 			"kcf": cv2.TrackerKCF_create,
 			"boosting": cv2.TrackerBoosting_create,
@@ -25,31 +17,42 @@ class ObjectTracker:
 			"mosse": cv2.TrackerMOSSE_create
 		}
 		
-		return OPENCV_OBJECT_TRACKERS[tracker_name]	
+		spawner = availableTrackers.get(tracker_name)
+		return spawner()	
 	
-
-	def __init__(self):
-		
-		self.tracker = cv2.TrackerCSRT_create()
+	def __init__(self, tracker_to_use="csrt"):
+		self.presenterBB = None
+		self.laserBB = None
+		self.frame = None
+		self.info = None
+		self.tracker_name = tracker_to_use
+		self.tracker = self.spawn_tracker(self.tracker_name)
 		self.video_stream = VideoStream(src=0).start()
-		print("Using OpenCV version " + cv2.__version__ + "\n")
+		self.version = cv2.__version__
 
-	
-	def setTracker(self, tracker_name):
+		# For performance, these are hard coded for a 16:9 ratio camera
+		# Change to whatever aspect ratio is used, with width of 500
+		self.frameHeight = 889
+		self.frameWidth = 500
+
+	def set_tracker(self, tracker_name):
 		self.tracker_name = tracker_name
-		self.tracker = self.tracker_dict(tracker_name)
-		
-	def update_presenter(self, frame):
-		self.frame = frame
-		
-		# If the feed is done, do not update
-		if frame is None:
-			return
-		
-		# Resize frame and grab frame dimensions
-		frame = imutils.resize(frame, width=500)
-		(H, W) = frame.shape[:2]
+		self.tracker = self.spawn_tracker(tracker_name)
 	
+	def update_frame(self, frame):
+		# If the feed is done, just set to None
+		if frame is None:
+			self.frame = None
+
+		# Otherwise, resize the image and update
+		else:
+			self.frame = imutils.resize(frame, width=500)
+
+	def update_presenter(self):
+		# If the feed is done, do not update
+		if self.frame is None:
+			return
+
 		# Are we currently tracking?
 		if self.presenterBB is not None:
 		
@@ -58,8 +61,6 @@ class ObjectTracker:
 			
 			# Successful?
 			if success:
-				(x, y, w, h) = [int(v) for v in box]
-				cv2.rectangle(self.frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 				return box
 				
 	def set_presenter(self, initBB):
