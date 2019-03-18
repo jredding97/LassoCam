@@ -1,4 +1,4 @@
-import Tkinter
+import tkinter as Tkinter
 import cv2
 import PIL.Image, PIL.ImageTk
 import time

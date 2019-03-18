@@ -4,30 +4,41 @@ import PIL.Image, PIL.ImageTk
 import time
 import imutils
 import os
+import datetime
+from picamera.array import PiRGBArray
+from picamera import PiCamera
 from ObjectTracker import ObjectTracker
 from CameraControl import CameraControl
-from imutils.video import VideoStream
-from imutils.video import FPS
+from imutils.video import VideoStream, FPS
 
  
-class App:
-    def __init__(self, window, window_title, video_source_a=0, video_source_b=0):
+class GUI: 
+    def __init__(self, window, window_title, tracking_source):
         # Define GUI
         self.window = window
         self.window.resizable(width=False, height=False)
         self.window.title(window_title)
         self.window.geometry("500x900")
-        
-        self.video_source_a = video_source_a
-        self.video_source_b = video_source_b
+        print("Window object made")
+
+        self.tracking_source = tracking_source
         
         # Define Modules
         self.tracker_module = ObjectTracker("kcf")
         #self.control_module = ControlModule()
- 
+
         # open video source (the webcam for now)
-        self.camera_a = CameraFeed(self.video_source_a)
-        self.camera_b = CameraFeed(self.video_source_b)
+        self.camera_b = CameraFeed(self.tracking_source)
+
+        print("Webcam initialized")
+
+        # Initialize PiCamera
+        self.picam = PiCamera()
+        self.camera_a = PiRGBArray(self.picam)
+        self.picam.resolution=(736, 416)
+
+        print("PiCamera initialized")
+ 
 
         # make a canvas
         self.canvas = Tkinter.Canvas(window, width=888, height=800)
@@ -58,11 +69,12 @@ class App:
         self.window.after(self.delay, self.update_feeds)
         
     def update_feed_a(self):
-        ret, frame = self.camera_a.get_frame()
-        if ret:
-            self.photo_a = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            self.photo_a = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(self.photo_a))
-            self.canvas.create_image(0, 0, image = self.photo_a, anchor = Tkinter.NW)
+        self.picam.capture(self.camera_a, format="bgr")
+        frame = self.camera_a.array
+        self.camera_a.truncate(0)
+        self.photo_a = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        self.photo_a = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(self.photo_a))
+        self.canvas.create_image(0, 0, image = self.photo_a, anchor = Tkinter.NW)
 
     def update_feed_b(self):
         ret, frame = self.camera_b.get_frame()
@@ -97,12 +109,18 @@ class App:
 class CameraFeed:
     def __init__(self, video_source):
         # Open the video source
-        self.cap = cv2.VideoCapture(video_source)
+        print("Opening webcam")
+        try:
+            self.cap = cv2.VideoCapture(video_source)
+        except:
+            print("Webcam opened")
+
         if not self.cap.isOpened():
             raise ValueError("Unable to open video source", video_source)
         
         self.width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
         self.height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        print("Set resolution")
 
     def get_frame(self):
         if self.cap.isOpened():
@@ -146,5 +164,28 @@ class calibrateWindow(object):
         self.height = self.entHeight.get()
         self.top.destroy()
 
+class FPS:
+    def __init__(self):
+        self.start = None
+        self.end = None
+        self.numFrames = 0
+
+    def start(self):
+        self.start = datetime.datetime.now()
+
+    def stop(self):
+        self.end = datetime.datetime.now()
+
+    def update(self):
+        self.numFrames += 1
+
+    def elapsed(self):
+        return (self.end - self.start).total_seconds()
+
+    def fps(self):
+        return self.numFrames / self.elapsed()
+
+
 # create a window for the app
-App(Tkinter.Tk(), "LassoCam Calibration GUI", "../resources/eveMitochondria.mp4", "../resources/eveMitochondria.mp4")
+#GUI(Tkinter.Tk(), "LassoCam Calibration GUI", 0)
+GUI(Tkinter.Tk(), "LassoCam Calibration GUI", "../resources/eveMitochondria.mp4")
