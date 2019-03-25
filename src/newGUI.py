@@ -48,6 +48,7 @@ def next_stage():
 		bar['value'] = 100
 		lbl1.configure(text="Begin Recording")
 		lbl2.configure(text="Click the button to exit setup\nand immediately begin recording\nusing LassoCam technology")
+		btn.configure(text="Start", command=next_stage)
 		btn.grid(column=0, row=4, pady=(90,10))
 	else:
 		print(" ")
