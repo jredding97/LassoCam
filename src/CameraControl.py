@@ -34,8 +34,13 @@ class CameraControl:
 
         return (xAngle, yAngle)
 
-    def set_angle(self):
-        print()
+    def set_angle(self, xCoord, yCoord):
+        # Calculate angle via coordinates
+        xAngle, yAngle = get_angle(xCoord, yCoord)
+
+        # Point camera to position
+        pantilthat.pan(xAngle)
+        pantilthat.tilt(yAngle)
 
 
     def start_recording(self, path):
