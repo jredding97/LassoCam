@@ -18,7 +18,7 @@ class CameraControl:
         xPos = xCoord / 1920 
         yPos = yCoord / 1080 
 
-        calculate angle
+        # calculate angle
         print()
 
     def set_angle(self):
