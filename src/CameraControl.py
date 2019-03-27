@@ -67,7 +67,7 @@ def calc_angle(xy, coord, dist, distance):
     else:       #y
         halfGrid = 540
     #figure out which side we're on/where we're going
-    if coord > halfGrid:
+    if coord >= halfGrid:
         n = coord - halfGrid
         angle = math.degrees(math.atan((dist * n / 1900) / distance))
         return angle
