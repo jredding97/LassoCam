@@ -1,188 +1,221 @@
-import tkinter as Tkinter
+from tkinter import *
+from tkinter import ttk
 import cv2
-import PIL.Image, PIL.ImageTk
-import time
+from time import sleep
 import imutils
 import os
 import datetime
-from picamera.array import PiRGBArray
-from picamera import PiCamera
+from threading import Thread
+#from picamera.array import PiRGBArray
+#from picamera import PiCamera
 from ObjectTracker import ObjectTracker
 from CameraControl import CameraControl
 from imutils.video import VideoStream, FPS
 
- 
-class GUI: 
-    def __init__(self, window, window_title, tracking_source):
-        # Define GUI
-        self.window = window
-        self.window.resizable(width=False, height=False)
-        self.window.title(window_title)
-        self.window.geometry("500x900")
-        print("Window object made")
+#globals from GUI
+global stage
+stage = 0
+global directory
+directory = None
+global distance
+distance = 0
 
-        self.tracking_source = tracking_source
-        
-        # Define Modules
-        self.tracker_module = ObjectTracker("kcf")
-        #self.control_module = ControlModule()
+#GUI creation
+class GUI:
+    def __init__(self, app, tracking_source):
 
-        # open video source (the webcam for now)
-        self.camera_b = CameraFeed(self.tracking_source)
+        self.app = app
 
-        print("Webcam initialized")
+        # window
+        self.window = Tk()
+        self.window.title("LassoCam Setup")
+        self.window.geometry('250x350')
 
-        # Initialize PiCamera
-        self.picam = PiCamera()
-        self.camera_a = PiRGBArray(self.picam)
-        self.picam.resolution=(736, 416)
+        # progress bar
+        style = ttk.Style()
+        style.theme_use('default')
+        style.configure("black.Horizontal.TProgressbar", background='black')
+        self.bar = ttk.Progressbar(self.window, length=250, style='black.Horizontal.TProgressbar')
+        self.bar['value'] = 0
+        self.bar.grid(column=0, row=0)
 
-        print("PiCamera initialized")
- 
+        # labels
+        self.lbl1 = Label(self.window, text="LassoCam", font=("Arial Bold", 14))
+        self.lbl1.grid(column=0, row=1)
+        self.lbl2 = Label(self.window, text="Welcome to the LassoCam\ncamera calibration program\nclick continue to proceed", font=("Arial Italic", 14))
+        self.lbl2.grid(column=0, row=2, pady=(100,0))
 
-        # make a canvas
-        self.canvas = Tkinter.Canvas(window, width=888, height=800)
-        self.canvas.pack()
-        
-        # make a message area
-        self.message = Tkinter.Label(window, text="This is where instructions go for the user!", bg="red", fg="white")
-        self.message.pack()
+        # text entry
+        self.txt = Entry(self.window,width=10)
 
-        # make a Calibrate button
-        self.btn_calibrate = Tkinter.Button(window, text="Calibrate")
-        self.btn_calibrate.pack()
-    
-        # make a Selection button
-        self.btn_selection = Tkinter.Button(window, text="Make Selection", command=self.select_presenter)
-        self.btn_selection.pack()
+        # button
+        self.btn = Button(self.window, text="Continue", command=self.next_stage)
+        self.btn.grid(column=0, row=4, pady=(90,10))
 
-        # updates every self.delay number of milliseconds
-        self.delay = 5
-        self.update_feeds()
- 
+        # run window
         self.window.mainloop()
  
-    # used to update the canvas with the current video frame
-    def update_feeds(self):
-        self.update_feed_a()
-        self.update_feed_b()
-        self.window.after(self.delay, self.update_feeds)
-        
-    def update_feed_a(self):
-        self.picam.capture(self.camera_a, format="bgr")
-        frame = self.camera_a.array
-        self.camera_a.truncate(0)
-        self.photo_a = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        self.photo_a = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(self.photo_a))
-        self.canvas.create_image(0, 0, image = self.photo_a, anchor = Tkinter.NW)
+    #GUI mapping
+    def next_stage(self):
+        global directory
+        global distance
+        global stage 
+        stage = stage + 1
+        if stage == 1:
+            self.bar['value'] = 20 
+            self.lbl1.configure(text="Setup Camera")
+            self.lbl2.configure(text="Place the camera so the\nentire stage is shown,\nthen click continue")
+            self.txt.grid_forget()
 
-    def update_feed_b(self):
-        ret, frame = self.camera_b.get_frame()
-        if ret:
-            self.tracker_module.update_frame(frame)
-            box = self.tracker_module.update_presenter()
+            # Display map camera
+            self.app.start_map()
+        elif stage == 2:
+            self.bar['value'] = 40
+            self.lbl1.configure(text="Measuring Distance")
+            self.lbl2.configure(text="Enter the distance (in inches)\nfrom the camera to the stage,\nthen click continue")
+            self.txt.grid(column=0, row=3)
+            self.txt.focus()
+            self.btn.grid(column=0, row=4, pady=(61,10))
+        elif stage == 3:
+            self.bar['value'] = 60
+            distance = int(self.txt.get())
+            self.lbl1.configure(text="Person Selection")
+            self.lbl2.configure(text="Select the torso of the\nperson you'd like to track,\nthen click continue")
+            self.btn.grid(column=0, row=4, pady=(90,10))
+            self.txt.grid_forget()
+            sleep(0.5)
 
-            if not box is None:
-                (x, y, w, h) = [int(v) for v in box]
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                # self.canvas.create_rectangle(x+0, y+410, x+0+w, y+410+h)
+            # Select Presenter
+            self.app.select_presenter()
+            self.app.start_tracker()
+        elif stage == 4:
+            self.bar['value'] = 80
+            self.lbl1.configure(text="Save Destination")
+            self.lbl2.configure(text="Choose where to save the video\nafter it has been recorded,\nthen click continue")
+            self.btn.grid(column=0, row=4, pady=(90,10))
+            directory = filedialog.askdirectory()
+            self.lbl2.configure(text=directory)
+            self.btn.grid(column=0, row=4, pady=(122,10))
+        elif stage == 5:
+            self.bar['value'] = 100
+            self.lbl1.configure(text="Begin Recording")
+            self.lbl2.configure(text="Click the button to exit setup\nand immediately begin recording\nusing LassoCam technology")
+            self.btn.configure(text="Start", command=self.next_stage)
+            self.btn.grid(column=0, row=4, pady=(90,10))
+        else:
+            print(" ")
+            print("--- SETUP OVER ---")
+            print(directory)
+            print(distance)
+            print(" ")
+            self.window.quit()
 
-            self.photo_b = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
-            self.canvas.create_image(0, 410, image = self.photo_b, anchor = Tkinter.NW)
-
-            if not box is None:
-                self.canvas.create_rectangle(x+0, y+410, x+0+w, y+410+h)
-
-    def select_presenter(self):
-        # select bounding box (Press Enter or Space after selection
-        initBB = cv2.selectROI(self.camera_b.get_frame()[1], fromCenter=False, showCrosshair=True)
-        self.tracker_module.set_presenter(initBB)
-        self.tracker_module.update_presenter()
-
-    def set_distance(self):
-        # Calibrate ControlModule
-        self.calibrateWindow(self.master)
-        self.btn_calibrate["state"] = "disabled" 
-        self.master.wait_window(self.w.top)
-        self.btn_calibrate["state"] = "normal"
- 
-class CameraFeed:
-    def __init__(self, video_source):
+class CamFeed:
+    def __init__(self, cap):
         # Open the video source
-        print("Opening webcam")
-        self.cap = cv2.VideoCapture(video_source)
-
-        if not self.cap.isOpened():
-            raise ValueError("Unable to open video source", video_source)
-        
-        self.width = self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-        self.height = self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-        print("Set resolution")
+        self.cap = cap
+        cap.start()
 
     def get_frame(self):
-        if self.cap.isOpened():
-            ret, frame = self.cap.read()
-            if ret:
-                # resize the current frame to fit nicely
-                frame = cv2.resize(frame, (0,0), fx=0.38, fy=0.38)
-                # return the frame using BGR
-                return (ret, frame)
-            else:
-                return (ret, None)
-        else:
-            return (ret, None)
 
-    # Release the video source when the object is destroyed
+        frame = self.cap.read()
+
+        if not frame is None:
+            # resize the current frame
+            frame = imutils.resize(frame, width=300)
+            return frame
+
+        # If any part fails, return None
+        return None
+
     def __del__(self):
-        if self.cap.isOpened():
-            self.cap.release()
- 
+        self.cap.stop()
 
 
-class calibrateWindow(object):
-    def __init__(self,master):
-        top=self.top = Tkinter.Toplevel(master)
+class App:
 
-        self.lblDistance = Tkinter.Label(top,text="Enter the distance from the board to the LassoCam")
-        self.lblDistance.pack()
-        self.entDistance = Tkinter.Entry(top)
-        self.entDistance.pack()
+    def __init__(self, webcam, picam):
 
-        self.lblHeight = Tkinter.Label(top,text="Enter the distance from the floor to the LassoCam")
-        self.lblHeight.pack()
-        self.entHeight = Tkinter.Entry(top)
-        self.entHeight.pack()
-        
-        self.btnOK = Tkinter.Button(top,text='Ok',command=self.cleanup)
-        self.btnOK.pack()
+        self.stopMap = False 
+        self.stopTrack = False
 
-    def cleanup(self):
-        self.distance = self.entDistance.get()
-        self.height = self.entHeight.get()
-        self.top.destroy()
+        # Create Webcam Feed
+        self.webCam = CamFeed(webcam)
+        print("Opened webcam")
 
-class FPS:
-    def __init__(self):
-        self.start = None
-        self.end = None
-        self.numFrames = 0
+        # Create PiCam Feed
+        self.piCam = CamFeed(picam)
+        print("opened piCam")
 
-    def start(self):
-        self.start = datetime.datetime.now()
+        # Create Object Tracker
+        self.objectTracker = ObjectTracker("kcf")
 
-    def stop(self):
-        self.end = datetime.datetime.now()
+        # Create Camera Controller
+        self.camControl = CameraControl(picam)
 
-    def update(self):
-        self.numFrames += 1
-
-    def elapsed(self):
-        return (self.end - self.start).total_seconds()
-
-    def fps(self):
-        return self.numFrames / self.elapsed()
+        # Create GUI
+        self.gui = GUI(self, 0)
 
 
-# create a window for the app
-#GUI(Tkinter.Tk(), "LassoCam Calibration GUI", 0)
-GUI(Tkinter.Tk(), "LassoCam Calibration GUI", "../resources/eveMitochondria.mp4")
+    def start_map(self):
+        # Create thread for map display
+        tmap = Thread(target = self.update_map, name = "MapFeed Display", args=())
+        tmap.daemon = True
+
+        # Start thread
+        tmap.start()
+
+        return self
+
+    def stop_map(self):
+        self.stopMap = True
+
+    def select_presenter(self):
+        frame = self.webCam.get_frame()
+        initBB = cv2.selectROI(frame, fromCenter=False, showCrosshair=True)
+        self.objectTracker.set_presenter(initBB)
+        self.objectTracker.update_presenter()
+
+    def start_tracker(self):
+        # Create thread for tracking
+        tTrack = Thread(target = self.objectTracker.update_presenter, name = "Tracker Thread", args=())
+        tTrack.daemon = True
+
+        # Start thread
+        tTrack.start()
+
+        return self
+
+    def start_pantilt(self):
+        # Create thread for pantilt
+        tPantilt = Thread(target = self.update_pantilt, name = "Pantilt Thread", args=())
+        tPantilt.daemon = True
+
+        # Start thread
+        tPantilt.start()
+
+        return self
+
+    def update_map(self):
+        while True:
+            if not self.stopMap:
+
+                # Grab frame, show it
+                frame = self.webCam.get_frame()
+                cv2.imshow("Frame", frame)
+                cv2.waitKey(10) & 0xFF
+                sleep(0.04)
+
+    def update_pantilt(self):
+        while True:
+            if not self.stopPantilt:
+                # Grab coordinates
+                self.camControl.get_angle(self.x, self.y)
+
+
+# Grab devices
+wc = VideoStream()
+pc = VideoStream(usePiCamera=True)
+
+# Open application
+App(wc, pc)
