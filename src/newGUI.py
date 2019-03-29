@@ -40,7 +40,7 @@ class GUI:
         self.bar.grid(column=0, row=0)
 
         # labels
-        self.lbl1 = Label(self.window, text="LassoCam", font=("Arial Bold", 14))
+            self.lbl1 = Label(self.window, text="LassoCam", font=("Arial Bold", 14))
         self.lbl1.grid(column=0, row=1)
         self.lbl2 = Label(self.window, text="Welcome to the LassoCam\ncamera calibration program\nclick continue to proceed", font=("Arial Italic", 14))
         self.lbl2.grid(column=0, row=2, pady=(100,0))
