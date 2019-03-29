@@ -27,7 +27,6 @@ class ObjectTracker:
 		self.info = None
 		self.tracker_name = tracker_to_use
 		self.tracker = self.spawn_tracker(self.tracker_name)
-		self.video_stream = VideoStream(src=0).start()
 		self.version = cv2.__version__
 
 		# For performance, these are hard coded for a 16:9 ratio camera

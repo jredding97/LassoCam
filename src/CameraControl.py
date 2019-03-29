@@ -1,5 +1,6 @@
 import time
 import pantilthat
+from picamera import PiCamera
 import math
 from random import randint
 from datetime import datetime
@@ -8,8 +9,8 @@ from datetime import datetime
 class CameraControl:
     piCam = None
 
-    def __init__(self):
-        self.piCam = PiCamera()
+    def __init__(self, picam):
+        self.piCam = picam
         #distance, in inches of the camera's FOV
         self.xDist = 0
         self.yDist = 0

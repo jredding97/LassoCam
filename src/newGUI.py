@@ -9,7 +9,7 @@ from threading import Thread
 #from picamera.array import PiRGBArray
 #from picamera import PiCamera
 from ObjectTracker import ObjectTracker
-#from CameraControl import CameraControl
+from CameraControl import CameraControl
 from imutils.video import VideoStream, FPS
 
 #globals from GUI
@@ -66,6 +66,8 @@ class GUI:
             self.lbl1.configure(text="Setup Camera")
             self.lbl2.configure(text="Place the camera so the\nentire stage is shown,\nthen click continue")
             self.txt.grid_forget()
+
+            # Display map camera
             self.app.start_map()
         elif stage == 2:
             self.bar['value'] = 40
@@ -81,6 +83,11 @@ class GUI:
             self.lbl2.configure(text="Select the torso of the\nperson you'd like to track,\nthen click continue")
             self.btn.grid(column=0, row=4, pady=(90,10))
             self.txt.grid_forget()
+            sleep(0.5)
+
+            # Select Presenter
+            self.app.select_presenter()
+            self.app.start_tracker()
         elif stage == 4:
             self.bar['value'] = 80
             self.lbl1.configure(text="Save Destination")
@@ -115,7 +122,7 @@ class CamFeed:
 
         if not frame is None:
             # resize the current frame
-            frame = imutils.resize(frame, width=500)
+            frame = imutils.resize(frame, width=300)
             return frame
 
         # If any part fails, return None
@@ -130,6 +137,7 @@ class App:
     def __init__(self, webcam, picam):
 
         self.stopMap = False 
+        self.stopTrack = False
 
         # Create Webcam Feed
         self.webCam = CamFeed(webcam)
@@ -140,7 +148,10 @@ class App:
         print("opened piCam")
 
         # Create Object Tracker
-        #self.objectTracker = ObjectTracker("kcf")
+        self.objectTracker = ObjectTracker("kcf")
+
+        # Create Camera Controller
+        self.camControl = CameraControl(picam)
 
         # Create GUI
         self.gui = GUI(self, 0)
@@ -158,9 +169,17 @@ class App:
     def stop_map(self):
         self.stopMap = True
 
-    def start_tracker(self):
-        print()
+    def select_presenter(self):
+        initBB = cv2.selectROI(self.webCam.get_frame(), fromCenter=False, showCrosshair=True)
+        self.objectTracker.set_presenter(initBB)
+        self.objectTracker.update_presenter()
 
+    def start_tracker(self):
+        tTrack = Thread(target = self.objectTracker.update_presenter, name = "Tracker Thread", args=())
+        tTrack.daemon = True
+        tTrack.start()
+
+        return self
 
     def update(self):
         while True:
