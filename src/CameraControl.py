@@ -39,9 +39,11 @@ class CameraControl:
         # Calculate angle via coordinates
         xAngle, yAngle = get_angle(xCoord, yCoord)
 
-        # Point camera to position
-        pantilthat.pan(xAngle)
-        pantilthat.tilt(yAngle)
+        # Camera should only be corrected if more than 2 degrees off
+        if abs(xAngle - curAngleX) > 2 or abs(yAngle - curAngleY) > 2:
+            # Point camera to position
+            pantilthat.pan(xAngle)
+            pantilthat.tilt(yAngle)
 
 
     def start_recording(self, path):

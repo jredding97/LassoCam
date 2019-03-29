@@ -5,6 +5,7 @@ from time import sleep
 import imutils
 import os
 import datetime
+import numpy as np
 from threading import Thread
 #from picamera.array import PiRGBArray
 #from picamera import PiCamera
@@ -122,7 +123,7 @@ class CamFeed:
 
         if not frame is None:
             # resize the current frame
-            frame = imutils.resize(frame, width=300)
+            frame = imutils.resize(frame, width=500)
             return frame
 
         # If any part fails, return None
@@ -172,9 +173,12 @@ class App:
 
     def select_presenter(self):
         frame = self.webCam.get_frame()
-        initBB = cv2.selectROI(frame, fromCenter=False, showCrosshair=True)
+        self.stop_map()
+        print("Grabbed frame to select")
+        initBB = cv2.selectROI("Select Presenter", frame, fromCenter=False, showCrosshair=True)
         self.objectTracker.set_presenter(initBB)
         self.objectTracker.update_presenter()
+        self.start_map()
 
     def start_tracker(self):
         # Create thread for tracking
@@ -196,13 +200,24 @@ class App:
 
         return self
 
+    def start_detector(self):
+        # Create thread for pantilt
+        tDetector = Thread(target = self.update_pantilt, name = "Pantilt Thread", args=())
+        tDetector.daemon = True
+
+        # Start thread
+        tDetector.start()
+
+        return self
+
+
     def update_map(self):
         while True:
             if not self.stopMap:
 
                 # Grab frame, show it
                 frame = self.webCam.get_frame()
-                cv2.imshow("Frame", frame)
+                cv2.imshow("Mapping Camera Display", frame)
                 cv2.waitKey(10) & 0xFF
                 sleep(0.04)
 
@@ -210,7 +225,13 @@ class App:
         while True:
             if not self.stopPantilt:
                 # Grab coordinates
-                self.camControl.get_angle(self.x, self.y)
+                self.camControl.set_angle(self.x, self.y)
+
+    def update_detector(self):
+
+        print()
+
+
 
 
 # Grab devices
