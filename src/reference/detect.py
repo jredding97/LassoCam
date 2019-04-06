@@ -13,7 +13,8 @@ def id_class_name(class_id, classes):
 
 # Load model
 print("[INFO] Loading model...")
-net = cv2.dnn.readNetFromCaffe('../../resources/caffeMobilenet.prototxt', '../../resources/mobilenet.caffemodel')
+# net = cv2.dnn.readNetFromTensorflow('../../resources/tflite_graph.pb', '../../resources/tflite_graph.pbtxt')
+net = cv2.dnn.readNetFromTensorflow('../../resources/tflite_graph.pb')
 
 print("Opening webcam")
 cam = VideoStream(0).start()
@@ -24,8 +25,7 @@ while True:
     image = imutils.resize(image, width=300)
 
     (h, w) = image.shape[:2]
-    blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), 1.0, (300, 300), (104, 117, 123))
-
+    blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), size=(300, 300), swapRB=True, crop=False)
 
     net.setInput(blob)
     output = net.forward()
@@ -39,8 +39,8 @@ while True:
             box_y = detection[4] * h
             box_w = detection[5] * w
             box_h = detection[6] * h
-            cv2.rectangle(image, (int(box_x), int(box_y)), (int(box_w), int(box_height)), (23, 230, 210), thickness=1)
+            cv2.rectangle(image, (int(box_x), int(box_y)), (int(box_w), int(box_h)), (23, 230, 210), thickness=1)
             cv2.putText(image, class_name, (int(box_x), int(box_y+0.05*h)), cv2.FONT_HERSHEY_SIMPLEX,(0.005*w), (0, 0, 255))
 
     cv2.imshow('image', image)
-    cv2.waitKey(0)
+    cv2.waitKey(1) & 0xFF

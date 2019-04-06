@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, filedialog
 import cv2
 from time import sleep
 import imutils
@@ -8,7 +8,7 @@ import datetime
 import numpy as np
 from threading import Thread
 #from picamera.array import PiRGBArray
-#from picamera import PiCamera
+from picamera import PiCamera
 from ObjectTracker import ObjectTracker
 from CameraControl import CameraControl
 from imutils.video import VideoStream, FPS
@@ -84,11 +84,17 @@ class GUI:
             self.lbl2.configure(text="Select the torso of the\nperson you'd like to track,\nthen click continue")
             self.btn.grid(column=0, row=4, pady=(90,10))
             self.txt.grid_forget()
-            sleep(0.5)
+
+            # Pause display
+            self.app.stop_map()
 
             # Select Presenter
             self.app.select_presenter()
             self.app.start_tracker()
+
+            # Restart display
+            self.app.start_map()
+
         elif stage == 4:
             self.bar['value'] = 80
             self.lbl1.configure(text="Save Destination")
@@ -102,6 +108,13 @@ class GUI:
             self.lbl1.configure(text="Begin Recording")
             self.lbl2.configure(text="Click the button to exit setup\nand immediately begin recording\nusing LassoCam technology")
             self.btn.configure(text="Start", command=self.next_stage)
+            self.btn.grid(column=0, row=4, pady=(90,10))
+        elif stage == 6:
+            self.app.start_recording('video.h264')
+            self.bar['value'] = 100
+            self.lbl1.configure(text="Begin Recording")
+            self.lbl2.configure(text="Click the button to stop recording")
+            self.btn.configure(text="Stop", command=self.next_stage)
             self.btn.grid(column=0, row=4, pady=(90,10))
         else:
             print(" ")
@@ -129,30 +142,38 @@ class CamFeed:
         # If any part fails, return None
         return None
 
+    def pause(self):
+        self.cap.stop()
+
+    def unpause(self):
+        self.cap.stopped = True
+        self.cap.start()
+
     def __del__(self):
         self.cap.stop()
 
 
 class App:
 
-    def __init__(self, webcam, picam):
+    def __init__(self, webcam, picam, presenterBB):
 
         self.stopMap = False 
         self.stopTrack = False
+        self.laserBB = None
 
         # Create Webcam Feed
         self.webCam = CamFeed(webcam)
-        print("Opened webcam")
 
         # Create PiCam Feed
         self.piCam = CamFeed(picam)
-        print("opened piCam")
 
         # Create Object Tracker
         self.objectTracker = ObjectTracker("kcf")
 
         # Create Camera Controller
         self.camControl = CameraControl(picam)
+
+        self.presenterBB = presenterBB
 
         # Create GUI
         self.gui = GUI(self, 0)
@@ -162,6 +183,7 @@ class App:
         # Create thread for map display
         tmap = Thread(target = self.update_map, name = "MapFeed Display", args=())
         tmap.daemon = True
+        self.stopMap = False
 
         # Start thread
         tmap.start()
@@ -172,13 +194,8 @@ class App:
         self.stopMap = True
 
     def select_presenter(self):
-        frame = self.webCam.get_frame()
-        self.stop_map()
-        print("Grabbed frame to select")
-        initBB = cv2.selectROI("Select Presenter", frame, fromCenter=False, showCrosshair=True)
-        self.objectTracker.set_presenter(initBB)
+        self.objectTracker.set_presenter(self.initBB)
         self.objectTracker.update_presenter()
-        self.start_map()
 
     def start_tracker(self):
         # Create thread for tracking
@@ -200,9 +217,21 @@ class App:
 
         return self
 
-    def start_detector(self):
+    def start_recording(self, path):
+        self.piCam.resolution = (640, 480)
+        self.piCam.framerate = 30
+        self.piCam.vflip = True
+        while True:
+            frame = self.piCam.get_frame()
+            out.write(frame)
+            cv2.imshow('Output', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+#    def record(self):
+
+    def detect(self):
         # Create thread for pantilt
-        tDetector = Thread(target = self.update_pantilt, name = "Pantilt Thread", args=())
+        tDetector = Thread(target = self.update_detector, name = "Detector Thread", args=())
         tDetector.daemon = True
 
         # Start thread
@@ -217,9 +246,13 @@ class App:
 
                 # Grab frame, show it
                 frame = self.webCam.get_frame()
+                if not frame is None:
+                    print("found frame")
+
                 cv2.imshow("Mapping Camera Display", frame)
-                cv2.waitKey(10) & 0xFF
-                sleep(0.04)
+                print("IMSHOW DONE")
+                cv2.waitKey(1) & 0xFF
+                print("Made it to the end")
 
     def update_pantilt(self):
         while True:
@@ -235,8 +268,13 @@ class App:
 
 
 # Grab devices
+roiwc = cv2.VideoCapture(0)
+ret, frame = roiwc.read()
+presenterBB = cv2.selectROI("Select Presenter", frame, fromCenter=False, showCrosshair=True)
+cv2.destroyAllWindows()
+roiwc.release()
 wc = VideoStream()
 pc = VideoStream(usePiCamera=True)
 
 # Open application
-App(wc, pc)
+App(wc, pc, presenterBB)
