@@ -49,9 +49,9 @@ class CameraControl:
             print()
 
 	def get_zoom(self, yBound, xBound):
-		zoomX = (self.halfX * 2)/(xBound * 3)
+		zoomX = (self.fW)/(xBound * 3)
 		gridX = zoom / 2.0
-		zoomy = (self.halfY * 2)/(yBound * 3)
+		zoomy = (self.fH)/(yBound * 3)
 		gridy = zoom / 2.0
 		return (gridX, gridY, zoomX,zoomY)
 		
