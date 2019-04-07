@@ -13,12 +13,15 @@ class CameraControl:
         #distance, in inches of the camera's FOV
         self.xDist = 0
         self.yDist = 0
+
         #camera's current angle
         self.curAngleX = 0
         self.curAngleY = 0
+
         #camera's current grid location
         self.curX = 950
         self.curY = 540
+
         #camera's distance from plane of interest
         self.distance = 0
 
@@ -48,6 +51,7 @@ class CameraControl:
 
     def start_recording(self, path):
         filename = self.generate_filename(path)
+
         self.piCam.start_recording(filename)
 
 
@@ -70,23 +74,30 @@ class CameraControl:
     def set_size(self, h, w):
         self.fH = h
         self.fW = w
+        self.halfX = w/2
+        self.halfY = h/2
 
     def calc_angle(self, coord, dist, distance, x):
-        halfGrid = 0
-
-        if x == True: #x
-            halfGrid = self.fH / 2
-        else:       #y
-            halfGrid = self.fW / 2
-        #figure out which side we're on/where we're going
-        if coord >= halfGrid:
-            n = coord - halfGrid
-            angle = math.degrees(math.atan((dist * n / 1900) / distance)) * -1
-            return angle
+        if x is True:
+            #figure out which side we're on/where we're going
+            if coord >= self.halfX:
+                n = coord - self.halfX
+                angle = math.degrees(math.atan((dist * n / 1900) / distance)) * -1
+                return angle
+            else:
+                n = self.halfX - coord
+                angle = math.degrees(math.atan((dist * n / 1900) / distance))
+                return angle
         else:
-            n = halfGrid - coord
-            angle = math.degrees(math.atan((dist * n / 1900) / distance))
-            return angle
+            #figure out which side we're on/where we're going
+            if coord >= self.halfY:
+                n = coord - self.halfY
+                angle = math.degrees(math.atan((dist * n / 1900) / distance)) * -1
+                return angle
+            else:
+                n = self.halfY - coord
+                angle = math.degrees(math.atan((dist * n / 1900) / distance))
+                return angle
 
 #newCam = CameraControl()
 #newCam.calibrate(120, 50)

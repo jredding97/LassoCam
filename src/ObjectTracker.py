@@ -61,7 +61,7 @@ class ObjectTracker:
                         
                         # Successful?
                         if success:
-                            print("Success")
+                            # print("Success")
                             self.presenterBB = box
                         else:
                             print("Lost you")
