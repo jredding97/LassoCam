@@ -7,7 +7,7 @@ from datetime import datetime
 
 
 class CameraControl:
-    piCam = None
+    piCam = PiCamera()
 
     def __init__(self):
         #distance, in inches of the camera's FOV
@@ -50,6 +50,10 @@ class CameraControl:
 
 
     def start_recording(self, path):
+        self.piCam.resolution = (640, 480)
+        self.piCam.framerate = 30
+        self.piCam.vflip = True
+
         filename = self.generate_filename(path)
 
         self.piCam.start_recording(filename)
@@ -68,8 +72,8 @@ class CameraControl:
 
     def generate_filename(self, path):
         currDT = datetime.now()
-        filename = 'LassoCam - ' + currDT.strftime("%Y%m%d-%H%M%S")
-        return (path + '\\' + filename)
+        filename = 'LassoCam - ' + currDT.strftime("%Y%m%d-%H%M%S") + '.h264'
+        return (path + '/' + filename)
 
     def set_size(self, h, w):
         self.fH = h

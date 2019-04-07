@@ -148,7 +148,7 @@ class GUI:
             self.btn.grid(column=0, row=4, pady=(90,10))
 
         elif stage == 6:
-            self.app.start_recording('video.h264')
+            self.app.camControl.start_recording(directory)
             self.bar['value'] = 100
             self.lbl1.configure(text="Begin Recording")
             self.lbl2.configure(text="Click the button to stop recording")
@@ -156,7 +156,7 @@ class GUI:
             self.btn.grid(column=0, row=4, pady=(90,10))
 
         else:
-            self.app.stop_recording()
+            self.app.camControl.stop_recording()
             displayMap = False
             print(" ")
             print("--- SETUP OVER ---")
@@ -173,7 +173,7 @@ class GUI:
 class CamFeed:
     def __init__(self):
         # Open the video source
-        self.cap = cv2.VideoCapture(1)
+        self.cap = cv2.VideoCapture(0)
         (self.grabbed, self.frame) = self.cap.read()
         self.read_lock = Lock()
 
@@ -221,8 +221,6 @@ class App:
         self.webCam = CamFeed()
         frame = self.webCam.get_frame()
         (self.fH, self.fW) = frame.shape[:2]
-
-        self.piCam = PiCamera()
 
         # Create Object Tracker
         self.objectTracker = ObjectTracker("kcf")
@@ -294,15 +292,6 @@ class App:
         tPantilt.start()
 
         return self
-
-    def start_recording(self, path):
-        self.piCam.resolution = (640, 480)
-        self.piCam.framerate = 30
-        self.piCam.vflip = True
-        self.piCam.start_recording('video.h264')
-
-    def stop_recording(self):
-        self.piCam.stop_recording()
 
     def detect(self):
         global mapFrame
@@ -376,7 +365,7 @@ class App:
             if i[1] < laserB:
                 laserB = i[1]
 
-        self.cameraControl.lassozoom(laserT, laserR, laserB, laserL)
+        self.camControl.lassozoom(laserT, laserR, laserB, laserL)
 
 
 
