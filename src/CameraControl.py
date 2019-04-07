@@ -92,21 +92,21 @@ class CameraControl:
             #figure out which side we're on/where we're going
             if coord >= self.halfX:
                 n = coord - self.halfX
-                angle = math.degrees(math.atan((dist * n / 1900) / distance)) * -1
+                angle = math.degrees(math.atan((dist * n / self.fW) / distance)) * -1
                 return angle
             else:
                 n = self.halfX - coord
-                angle = math.degrees(math.atan((dist * n / 1900) / distance))
+                angle = math.degrees(math.atan((dist * n / self.fW) / distance))
                 return angle
         else:
             #figure out which side we're on/where we're going
             if coord >= self.halfY:
                 n = coord - self.halfY
-                angle = math.degrees(math.atan((dist * n / 1900) / distance)) * -1
+                angle = math.degrees(math.atan((dist * n / self.fH) / distance)) * -1
                 return angle
             else:
                 n = self.halfY - coord
-                angle = math.degrees(math.atan((dist * n / 1900) / distance))
+                angle = math.degrees(math.atan((dist * n / self.fH) / distance))
                 return angle
 
 #newCam = CameraControl()
