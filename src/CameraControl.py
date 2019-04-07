@@ -48,7 +48,13 @@ class CameraControl:
             # Point camera to position
             print()
 
-
+	def get_zoom(self, yBound, xBound):
+		zoomX = (self.halfX * 2)/(xBound * 3)
+		gridX = zoom / 2.0
+		zoomy = (self.halfY * 2)/(yBound * 3)
+		gridy = zoom / 2.0
+		return (gridX, gridY, zoomX,zoomY)
+		
     def start_recording(self, path):
         self.piCam.resolution = (640, 480)
         self.piCam.framerate = 30
