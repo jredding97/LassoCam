@@ -24,7 +24,6 @@ class ObjectTracker:
         def __init__(self, tracker_to_use="csrt"):
                 self.presenterBB = None
                 self.laserBB = None
-                self.frame = None
                 self.info = None
                 self.tracker_name = tracker_to_use
                 self.tracker = self.spawn_tracker(self.tracker_name)
@@ -42,35 +41,38 @@ class ObjectTracker:
         def update_frame(self, frame):
                 # If the feed is done, just set to None
                 if frame is None:
-                        self.frame = None
+                        frame = None
 
                 # Otherwise, resize the image and update
                 else:
-                        self.frame = imutils.resize(frame, width=500)
+                        frame = imutils.resize(frame, width=500)
 
-        def update_presenter(self):
+        def update_presenter(self, frame):
+
                 # If the feed is done, do not update
-                if self.frame is None:
+                if frame is None:
                         return
 
                 # Are we currently tracking?
                 if self.presenterBB is not None:
                 
                         # Grab bounding box coordinate of object
-                        (success, box) = self.tracker.update(self.frame)
-                        print("testing")
+                        (success, box) = self.tracker.update(frame)
                         
                         # Successful?
                         if success:
-                                return box
+                            print("Success")
+                            self.presenterBB = box
+                        else:
+                            print("Lost you")
                                 
-        def set_presenter(self, initBB):
+        def set_presenter(self, frame, initBB):
                 self.presenterBB = initBB
                 print(self.presenterBB)
-                self.tracker.init(self.frame, self.presenterBB)
+                self.tracker.init(frame, self.presenterBB)
 
         def get_presenter(self):
-                return self.presenterBB
+                return (self.presenterBB[0], self.presenterBB[1])
         
         def release_webcam(self):
                 self.video_stream.stop()

@@ -1,5 +1,5 @@
 import time
-import pantilthat
+from pantilthat import pan, tilt
 from picamera import PiCamera
 import math
 from random import randint
@@ -9,8 +9,7 @@ from datetime import datetime
 class CameraControl:
     piCam = None
 
-    def __init__(self, picam):
-        self.piCam = picam
+    def __init__(self):
         #distance, in inches of the camera's FOV
         self.xDist = 0
         self.yDist = 0
@@ -22,12 +21,11 @@ class CameraControl:
         self.curY = 540
         #camera's distance from plane of interest
         self.distance = 0
-        print()
 
 
     def get_angle(self, xCoord, yCoord):
-        xAngle = calc_angle(1, xCoord, self.xDist, self.distance)
-        yAngle = calc_angle(1, xCoord, self.yDist, self.distance)
+        xAngle = self.calc_angle(xCoord, self.xDist, self.distance, x=True)
+        yAngle = self.calc_angle(yCoord, self.yDist, self.distance, x=False)
         self.curAngleX = xAngle
         self.curAngleY = yAngle
         self.curX = xCoord
@@ -37,13 +35,15 @@ class CameraControl:
 
     def set_angle(self, xCoord, yCoord):
         # Calculate angle via coordinates
-        xAngle, yAngle = get_angle(xCoord, yCoord)
+        xAngle, yAngle = self.get_angle(xCoord, yCoord)
+
+        pan(xAngle)
+        tilt(yAngle)
 
         # Camera should only be corrected if more than 2 degrees off
-        if abs(xAngle - curAngleX) > 2 or abs(yAngle - curAngleY) > 2:
+        if abs(xAngle - self.curAngleX) > 2 or abs(yAngle - self.curAngleY) > 2:
             # Point camera to position
-            pantilthat.pan(xAngle)
-            pantilthat.tilt(yAngle)
+            print()
 
 
     def start_recording(self, path):
@@ -67,22 +67,26 @@ class CameraControl:
         filename = 'LassoCam - ' + currDT.strftime("%Y%m%d-%H%M%S")
         return (path + '\\' + filename)
 
-def calc_angle(xy, coord, dist, distance):
-    halfGrid = 0
+    def set_size(self, h, w):
+        self.fH = h
+        self.fW = w
 
-    if xy == 1: #x
-        halfGrid = 950
-    else:       #y
-        halfGrid = 540
-    #figure out which side we're on/where we're going
-    if coord >= halfGrid:
-        n = coord - halfGrid
-        angle = math.degrees(math.atan((dist * n / 1900) / distance))
-        return angle
-    else:
-        n = halfGrid - coord
-        angle = math.degrees(math.atan((dist * n / 1900) / distance)) * -1
-        return angle
+    def calc_angle(self, coord, dist, distance, x):
+        halfGrid = 0
+
+        if x == True: #x
+            halfGrid = self.fH / 2
+        else:       #y
+            halfGrid = self.fW / 2
+        #figure out which side we're on/where we're going
+        if coord >= halfGrid:
+            n = coord - halfGrid
+            angle = math.degrees(math.atan((dist * n / 1900) / distance)) * -1
+            return angle
+        else:
+            n = halfGrid - coord
+            angle = math.degrees(math.atan((dist * n / 1900) / distance))
+            return angle
 
 #newCam = CameraControl()
 #newCam.calibrate(120, 50)

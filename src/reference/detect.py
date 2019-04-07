@@ -14,7 +14,7 @@ def id_class_name(class_id, classes):
 # Load model
 print("[INFO] Loading model...")
 # net = cv2.dnn.readNetFromTensorflow('../../resources/tflite_graph.pb', '../../resources/tflite_graph.pbtxt')
-net = cv2.dnn.readNetFromTensorflow('../../resources/tflite_graph.pb')
+net = cv2.dnn.readNetFromTensorflow('../../resources/saved_model.pb')
 
 print("Opening webcam")
 cam = VideoStream(0).start()

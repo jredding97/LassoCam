@@ -1,9 +1,8 @@
 import time
-import pantilthat
+from pantilthat import pan, tilt
 from random import randint
 
 while True:
-	pantilthat.pan(randint(-90, 90)
-	pantilthat.tilt(randint(-90, 90)
-
-	time.sleep(1)
+        pan(randint(-90, 90))
+        tilt(randint(-90, 90))
+        time.sleep(1)
