@@ -48,7 +48,7 @@ class CameraControl:
             # Point camera to position
             print()
 
-	def get_zoom(self, yBound, xBound):
+	def get_zoom(self, xBound, YBound):
 		zoomX = (self.fW)/(xBound * 3)
 		gridX = zoom / 2.0
 		zoomy = (self.fH)/(yBound * 3)
