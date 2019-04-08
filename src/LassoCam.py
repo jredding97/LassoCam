@@ -30,8 +30,14 @@ global initBB
 initBB = None
 global selectROI
 selectROI = False
+global lassoBB
+lassoBB = None
 global laserList
 laserList = None
+global selectLasso
+selectLasso = False
+global lassoReady
+lassoReady = False
 
 #GUI creation
 class GUI:
@@ -71,17 +77,28 @@ class GUI:
             global mapFrame
             global displayMap
             global initBB
+            global lassoBB
             global selectROI
-            if displayMap is True:
+            global selectLasso
+            global lassoReady
+
+            if displayMap:
                 cv2.imshow("Frame", mapFrame)
                 cv2.waitKey(1) & 0xFF
 
-            if selectROI is True:
-                initBB = cv2.selectROI("Select Presenter", mapFrame, fromCenter=False, showCrosshair=True)
-                cv2.destroyWindow("Select Presenter")
+            if selectROI:
+                initBB = cv2.selectROI("Make a Selection", mapFrame, fromCenter=False, showCrosshair=True)
+                cv2.destroyWindow("Make a Selection")
                 self.app.select_presenter()
                 self.app.start_tracker()
                 selectROI = False
+
+            if selectLasso:
+                lassoBB = cv2.selectROI("Make a Selection", mapFrame, fromCenter=False, showCrosshair=True)
+                cv2.destroyWindow("Make a Selection")
+                self.app.select_lasso()
+                lassoReady = True
+                selectLasso = False
 
             self.window.update_idletasks()
             self.window.update()
@@ -153,7 +170,9 @@ class GUI:
             self.lbl1.configure(text="Begin Recording")
             self.lbl2.configure(text="Click the button to stop recording")
             self.btn.configure(text="Stop", command=self.next_stage)
-            self.btn.grid(column=0, row=4, pady=(90,10))
+            self.btn2.grid(column=0, row=4, pady=(100,10))
+            self.btn2.configure(text="Lasso", command=self.app.select_lasso)
+            self.btn.grid(column=0, row=5, pady=(0,20))
 
         else:
             self.app.camControl.stop_recording()
@@ -173,7 +192,7 @@ class GUI:
 class CamFeed:
     def __init__(self):
         # Open the video source
-        self.cap = cv2.VideoCapture(0)
+        self.cap = cv2.VideoCapture(1)
         (self.grabbed, self.frame) = self.cap.read()
         self.read_lock = Lock()
 
@@ -320,13 +339,24 @@ class App:
 
         return self
 
+    def select_lasso(self):
+        global selectLasso
+        global lassoBB
+        global lassoReady
+        selectLasso = True
+
     def update_tracker(self):
-        global mapFrame
+        global mapFrame, selectLasso, lassoBB, lassoReady
         while True:
             self.objectTracker.update_presenter(mapFrame)
-            xCoord, yCoord = self.objectTracker.get_presenter()
+            pBB = self.objectTracker.get_presenter()
             #print("updated to: " + str(xCoord) + ", " + str(yCoord))
-            self.camControl.set_angle(xCoord, yCoord)
+            if lassoReady:
+                self.camControl.set_angle(lassoBB[0], lassoBB[1], lassoBB[2], lassoBB[3])
+                sleep(5)
+                lassoReady = False
+            else:
+                self.camControl.set_angle(pBB[0], pBB[1], pBB[2], pBB[3])
 
     def update_map(self):
         global mapFrame

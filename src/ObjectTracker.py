@@ -72,7 +72,7 @@ class ObjectTracker:
                 self.tracker.init(frame, self.presenterBB)
 
         def get_presenter(self):
-                return (self.presenterBB[0], self.presenterBB[1])
+                return self.presenterBB
         
         def release_webcam(self):
                 self.video_stream.stop()
