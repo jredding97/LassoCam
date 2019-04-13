@@ -13,9 +13,10 @@ def id_class_name(class_id, classes):
 
 # Load model
 print("[INFO] Loading model...")
-# net = cv2.dnn.readNetFromTensorflow('../../resources/tflite_graph.pb', '../../resources/tflite_graph.pbtxt')
+# net = cv2.dnn.readNetFromTensorflow('~/resources/tflite_graph.pb', '../../resources/tflite_graph.pbtxt')
 # net = cv2.dnn.readNetFromTensorflow('../../resources/saved_model.pb', '../../resource/graph.pbtxt')
-net = cv2.dnn.readNetFromTensorflow('../../resources/optimized.pb', '../../resources/optimized.pbtxt')
+#net = cv2.dnn.readNetFromDarknet('~/senior-design/resources/yolo.weights', '~/senior-design/resources/yolo.cfg')
+net = cv2.dnn.readNet('/home/jredding/senior-design/resources/yolo.cfg', '/home/jredding/senior-design/resources/yolo.weights', 'darknet')
 
 print("Opening webcam")
 cam = VideoStream(0).start()
