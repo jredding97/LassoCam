@@ -12,6 +12,7 @@ from picamera.array import PiRGBArray
 from picamera import PiCamera
 from ObjectTracker import ObjectTracker
 from CameraControl import CameraControl
+from RemoteControl import RemoteControl
 from imutils.video import VideoStream, FPS
 
 #globals from GUI
@@ -176,6 +177,7 @@ class GUI:
 
         else:
             self.app.camControl.stop_recording()
+            self.app.stop_tracker()
             displayMap = False
             print(" ")
             print("--- SETUP OVER ---")
@@ -227,14 +229,13 @@ class CamFeed:
 
 class App:
 
-    classNames = {1:'laser', 2:'lasernot'}
-
     def __init__(self):
         self.stopMap = False 
         self.stopTrack = False
         self.laserBB = None
         self.trackingLaser = False
-        #self.net = cv2.dn.readNet('../resources/laser_ssd.pb', '../resources/laser_ssd.pbtxt')
+        self.trackingPresenter = False
+        self.net = cv2.dnn.readNet('../resources/yolo.cfg', '../resources/yolo.weights')
 
         # Create Webcam Feed
         self.webCam = CamFeed()
@@ -243,28 +244,24 @@ class App:
 
         # Create Object Tracker
         self.objectTracker = ObjectTracker("kcf")
-        print("Object Tracker Created")
+        # print("Object Tracker Created")
         self.laserTracker = ObjectTracker("kcf")
 
         # Create Camera Controller
         self.camControl = CameraControl()
-        print("Camera Control Created")
-
         self.camControl.set_size(self.fH, self.fW)
-        print("Distance: " + str(distance))
 
-        #self.presenterBB = presenterBB
-        #print("Presenter: " + str(presenterBB[0]) + ", " + str(presenterBB[1]))
+        # Create Remote Controller
+        self.remoteControl = RemoteControl("/dev/rfcomm1")
+        self.start_remote()
 
         # Create GUI
         self.gui = GUI(self, 0)
 
-        print("DisplayMap: " + str(displayMap))
 
-    def id_class_name(class_id, classes):
-        for key, value in classes.items():
-            if class_id == key:
-                return value
+##################################################
+############ MAP FUNCTIONS #######################
+##################################################
 
     def start_map(self):
 
@@ -283,8 +280,19 @@ class App:
 
         return self
 
+    def update_map(self):
+        global mapFrame
+        while self.stopMap is False:
+            # Grab frame, show it
+            mapFrame = self.webCam.get_frame()
+            sleep(0.016)
+
     def stop_map(self):
         self.stopMap = True
+
+##################################################
+############ TRACKER FUNCTIONS ###################
+##################################################
 
     def select_presenter(self):
         global initBB
@@ -294,6 +302,7 @@ class App:
 
     def start_tracker(self):
         # Create thread for tracking
+        self.trackingPresenter = True
         tTrack = Thread(target = self.update_tracker, name = "Tracker Thread", args=())
         tTrack.daemon = True
 
@@ -302,15 +311,12 @@ class App:
 
         return self
 
-    def start_pantilt(self):
-        # Create thread for pantilt
-        tPantilt = Thread(target = self.update_pantilt, name = "Pantilt Thread", args=())
-        tPantilt.daemon = True
+    def stop_tracker(self):
+        self.trackingPresenter = False
 
-        # Start thread
-        tPantilt.start()
-
-        return self
+##################################################
+############## LASER FUNCTIONS ###################
+##################################################
 
     def detect(self):
         global mapFrame
@@ -347,29 +353,14 @@ class App:
 
     def update_tracker(self):
         global mapFrame, selectLasso, lassoBB, lassoReady
-        while True:
+        while self.trackingPresenter:
             self.objectTracker.update_presenter(mapFrame)
             pBB = self.objectTracker.get_presenter()
             #print("updated to: " + str(xCoord) + ", " + str(yCoord))
             if lassoReady:
                 self.camControl.set_angle(lassoBB[0], lassoBB[1], lassoBB[2], lassoBB[3])
-                sleep(5)
-                lassoReady = False
             else:
                 self.camControl.set_angle(pBB[0], pBB[1], pBB[2], pBB[3])
-
-    def update_map(self):
-        global mapFrame
-        while self.stopMap is False:
-            # Grab frame, show it
-            mapFrame = self.webCam.get_frame()
-            sleep(0.03)
-
-    def update_pantilt(self):
-        while True:
-            if not self.stopPantilt:
-                # Grab coordinates
-                self.camControl.set_angle(self.x, self.y)
 
     def update_laser(self):
         global laserList
@@ -397,25 +388,43 @@ class App:
 
         self.camControl.lassozoom(laserT, laserR, laserB, laserL)
 
+##################################################
+############## REMOTE FUNCTIONS ##################
+##################################################
 
+    def start_remote(self):
+        # Create thread for map display
+        tRemote = Thread(target = self.monitor_remote, name = "MapFeed Display", args=())
+        tRemote.daemon = True
 
-# Grab devices
-#roiwc = cv2.VideoCapture(1)
+        # Start thread
+        tRemote.start()
 
-#ret, frame = roiwc.read()
+        sleep(0.5)
 
-#frame = imutils.resize(frame, width=500)
+        return self
 
-#height, width = frame.shape[:2]
+    def monitor_remote(self):
+        global lassoReady, stage, selectLasso
 
-#cv2.namedWindow("Select Presenter")
-#presenterBB = cv2.selectROI("Select Presenter", frame, fromCenter=False, showCrosshair=True)
+        while True:
+            if self.remoteControl.hasWaiting():
+                readIn = self.remoteControl.read()
 
-#cv2.destroyAllWindows()
-#roiwc.release()
+                if readIn == 1:
+                    if stage == 6 and selectLasso is False:
+                        print("Lasso signal received.")
+                        self.select_lasso()
 
-#wc = VideoStream(src=1)
-#pc = VideoStream(usePiCamera=True)
+                if readIn == 2:
+                    print("Return to presenter.")
+                    lassoReady = False
+
+                if readIn == 3:
+                    print("Lasso end received.")
+
+        sleep(0.2)
+
 
 # Open application
 App()

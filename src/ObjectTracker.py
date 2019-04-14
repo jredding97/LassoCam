@@ -3,9 +3,9 @@ from imutils.video import FPS
 import imutils
 import time
 import cv2
+from datetime import datetime
 
 class ObjectTracker:
-                        
         def spawn_tracker(self, tracker_name):
                 availableTrackers = {
                         "csrt": cv2.TrackerCSRT_create,
@@ -21,7 +21,7 @@ class ObjectTracker:
                 tracker = cv2.TrackerCSRT_create()
                 return tracker
         
-        def __init__(self, tracker_to_use="csrt"):
+        def __init__(self, tracker_to_use="kcf"):
                 self.presenterBB = None
                 self.laserBB = None
                 self.info = None
@@ -49,6 +49,7 @@ class ObjectTracker:
 
         def update_presenter(self, frame):
 
+                start = datetime.now()
                 # If the feed is done, do not update
                 if frame is None:
                         return
@@ -65,6 +66,9 @@ class ObjectTracker:
                             self.presenterBB = box
                         else:
                             print("Lost you")
+
+                end = datetime.now()
+                print("Tracking took: " + str(end-start))
                                 
         def set_presenter(self, frame, initBB):
                 self.presenterBB = initBB

@@ -25,19 +25,13 @@ class CameraControl:
 
         #if xCoord >= self.halfX:
         xAngle = math.degrees(math.atan(self.pixel_width * (self.halfX - xCoord) / float(self.distance)))
-        print(str(xAngle))
-        #else:
-        #    xAngle = math.degrees(math.atan((self.xDist * (self.halfX - xCoord) / self.fW) / self.distance))
 
-        #if yCoord >= self.halfY:
         yAngle = math.degrees(math.atan(self.pixel_height * (yCoord - self.halfY) / float(self.distance)))
-        print(str(yAngle))
-        #else:
-        #    yAngle = math.degrees(math.atan((self.yDist * (self.halfY - yCoord) / self.fW) / self.distance)) * -1
 
         return (xAngle, yAngle)
 
     def set_angle(self, xCoord, yCoord, boxWidth, boxHeight):
+        start = datetime.now()
         # Calculate angle via coordinates
         center_x = xCoord + (boxWidth/2)
         center_y = yCoord + (boxHeight/3)
@@ -45,17 +39,29 @@ class CameraControl:
 
         pan(xAngle)
         tilt(yAngle)
+        end = datetime.now()
+        print("Took " + str(end-start) + " to move.")
 
         self.piCam.zoom = self.get_zoom(boxWidth, boxHeight)
 
+
     def get_zoom(self, box_w, box_h):
-        ratio_x = ((box_w * 3.0) / (640.0))
-        loc_x = ((640 - box_w) / 2.0)/640
-        print(str(ratio_x) + " @ " + str(loc_x))
-        ratio_y = self.aspect_ratio * ratio_x
-        # zoomy = (self.fH)/(box_h * 3)
-        loc_y = ((480 - box_h) / 2.0)/480
-        print(str(ratio_y) + " @ " + str(loc_y))
+        # ratio_x = box_w / float(640)
+        # loc_x = ((640 - box_w) / float(2)) / float(640)
+        ratio_x = (box_w / float(self.fW)) + .25
+        if ratio_x > 1:
+            ratio_x = 1
+        loc_x = (1-ratio_x)/float(2)
+        # print(str(ratio_x) + " @ " + str(loc_x))
+        # ratio_y = self.aspect_ratio * ratio_x
+        # loc_y = ((480 - box_h) / float(2)) / float(480)
+        ratio_y = (self.aspect_ratio * ratio_x) + .25
+        if ratio_y > 1:
+            ratio_y = 1
+        loc_y = (1-ratio_y)/float(2)
+        # print(str(ratio_y) + " @ " + str(loc_y))
+        print("Zoomed at: " + str(loc_x) + ", " + str(loc_y)
+                + " to " + str(ratio_x) + "x" + str(ratio_y))
         return (loc_x, loc_y, ratio_x, ratio_y)
 		
     def start_recording(self, path):
@@ -83,7 +89,7 @@ class CameraControl:
 
     def generate_filename(self, path):
         currDT = datetime.now()
-        filename = 'Output-LassoCam-' + currDT.strftime("%Y%m%d-%H%M%S") + '.h264'
+        filename = 'LassoCam_' + currDT.strftime("%Y-%m-%d_%H%M%S") + '.h264'
         return (path + '/' + filename)
 
     def set_size(self, h, w):
@@ -92,25 +98,3 @@ class CameraControl:
         self.halfX = w/2
         self.halfY = h/2
         self.aspect_ratio = h/w
-#
-#    def calc_angle(self, coord, dist, distance, x):
-#        if x is True:
-#            #figure out which side we're on/where we're going
-#            if coord >= self.halfX:
-#                n = coord - self.halfX
-#                angle = math.degrees(math.atan((dist * n / self.fW) / distance)) * -1
-#                return angle
-#            else:
-#                n = self.halfX - coord
-#                angle = math.degrees(math.atan((dist * n / self.fW) / distance))
-#                return angle
-#        else:
- #           #figure out which side we're on/where we're going
-  #          if coord >= self.halfY:
-   #             n = coord - self.halfY
-    #            angle = math.degrees(math.atan((dist * n / self.fH) / distance))
-     #           return angle
-      #      else:
-       #         n = self.halfY - coord
-        #        angle = math.degrees(math.atan((dist * n / self.fH) / distance)) * -1
-         #       return angle

@@ -3,45 +3,74 @@ from imutils.video import VideoStream
 import imutils
 import time
 import cv2
+import numpy as np
 
-classNames = {1 : 'laser', 2 : 'lasernot'}
+labelsPath = '/home/pi/Desktop/senior-design/resources/yoloclass.txt'
+LABELS = open(labelsPath).read().strip().split("\n")
 
-def id_class_name(class_id, classes):
-    for key, value in classes.items():
-        if class_id == key:
-            return value
+np.random.seed(42)
+COLORS = np.random.randint(0, 255, size=(len(LABELS), 3),
+            dtype="uint8")
 
 # Load model
 print("[INFO] Loading model...")
-# net = cv2.dnn.readNetFromTensorflow('../../resources/tflite_graph.pb', '../../resources/tflite_graph.pbtxt')
-# net = cv2.dnn.readNetFromTensorflow('../../resources/saved_model.pb', '../../resource/graph.pbtxt')
-net = cv2.dnn.readNetFromTensorflow('../../local/optimized.pb', '../../local/optimized.pbtxt')
+net = cv2.dnn.readNet('/home/pi/Desktop/senior-design/resources/yolo.cfg', '/home/pi/Desktop/senior-design/resources/yolo.weights')
 
 print("Opening webcam")
-cam = VideoStream(0).start()
+cam = VideoStream(1).start()
 
 while True:
 
     image = cam.read()
-    image = imutils.resize(image, width=300)
+    print("Got frame")
+    (H, W) = image.shape[:2]
+    ln = net.getLayerNames()
+    ln = [ln[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
-    (h, w) = image.shape[:2]
-    blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), size=(300, 300), swapRB=True, crop=False)
+    blob = cv2.dnn.blobFromImage(image, 1 / 255.0, (416, 416), swapRB=True, crop=False)
+    print("Converted to Blob")
 
     net.setInput(blob)
-    output = net.forward()
+    print("set input")
+    layerOutputs = net.forward(ln)
+    print("Got outputs")
 
-    for detection in output[0, 0, :, :]:
-        confidence = detection[2]
-        if confidence > 0.5:
-            class_id = detection[1]
-            class_name = id_class_name(class_id, classNames)
-            box_x = detection[3] * w
-            box_y = detection[4] * h
-            box_w = detection[5] * w
-            box_h = detection[6] * h
-            cv2.rectangle(image, (int(box_x), int(box_y)), (int(box_w), int(box_h)), (23, 230, 210), thickness=1)
-            cv2.putText(image, class_name, (int(box_x), int(box_y+0.05*h)), cv2.FONT_HERSHEY_SIMPLEX,(0.005*w), (0, 0, 255))
+    boxes = []
+    confidences = []
+    classIDs = []
 
-    cv2.imshow('image', image)
+    for output in layerOutputs:
+
+        for detection in output:
+
+            scores = detection[5:]
+            classID = np.argmax(scores)
+            confidence = scores[classID]
+            if confidence > 0.5:
+                box = detection[0:4] * np.array([W, H, W, H])
+                (centerX, centerY, width, height) = box.astype("int")
+
+                x = int(centerX - (width/2))
+                y = int(centerY - (height/2))
+
+                boxes.append([x, y, int(width), int(height)])
+                confidences.append(float(confidence))
+                classIDs.append(classID)
+
+    idxs = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.3)
+
+    if len(idxs) > 0:
+
+        for i in idxs.flatten():
+
+            (x, y) = (boxes[i][0], boxes[i][1])
+            (w, h) = (boxes[i][2], boxes[i][3])
+
+            color = [int(c) for c in COLORS[classIDs[i]]]
+            cv2.rectangle(image, (x, y), (x + w, y + h), color, 2)
+            text = "{}: {:.4f}".format(LABELS[classIDs[i]], confidences[i])
+            cv2.putText(image, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
+    cv2.imshow("Image", image)
     cv2.waitKey(1) & 0xFF
+
