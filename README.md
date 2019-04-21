@@ -15,13 +15,19 @@ Run the LassoCam.py program
 OpenCV - Newest Versioning
 	-- OpenCV Python (Contrib)
 	-- All OpenCV prerequisites (Will detail later)
+	
 Python 3
-[pySerial] (https://pythonhosted.org/pyserial/)
-[imutils] (https://github.com/jrosebr1/imutils) -- Can be installed with pip
+
+[pySerial](https://pythonhosted.org/pyserial/)
+
+[imutils](https://github.com/jrosebr1/imutils) -- Can be installed with pip
 
 Raspberry Pi 3B+
+
 Pimoroni PanTiltHat
+
 PiCamera
+
 Logitech C920
 
 ### Installing
