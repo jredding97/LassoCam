@@ -47,9 +47,9 @@ Not currently accepting public contributions
 ## Authors
 
 * **John Redding** - *Main Program* - [Museus](https://github.com/Museus)
-* **Mike Cannizaaro** - *Hardware Design* - [MikeC96] (https://github.com/MikeC96)
-* **Andrew Dodel** - *Angle Calculation* - [andrewdodel] (https://github.com/andrewdodel)
-* **Alex McMullen** - *User Interface* - [AlexanderTheDecent] (https://github.com/AlexanderTheDecent)
+* **Mike Cannizaaro** - *Hardware Design* - [MikeC96](https://github.com/MikeC96)
+* **Andrew Dodel** - *Angle Calculation* - [andrewdodel](https://github.com/andrewdodel)
+* **Alex McMullen** - *User Interface* - [AlexanderTheDecent](https://github.com/AlexanderTheDecent)
 
 ## License
 
@@ -57,6 +57,6 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## Acknowledgments
 
-* [PyImageSearch] (https://www.pyimagesearch.com) tutorials were incredibly helpful
-* [Adrian Rosebrock's] (https://github.com/jrosebr1) imutils library made initial development much easier
+* [PyImageSearch](https://www.pyimagesearch.com) tutorials were incredibly helpful
+* [Adrian Rosebrock's](https://github.com/jrosebr1) imutils library made initial development much easier
 
