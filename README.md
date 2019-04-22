@@ -42,13 +42,13 @@ This system is not currently ready for live deployment.
 
 ## Built With
 
-* [OpenCV](http://www.dropwizard.io/1.0.2/docs/) - The web framework used
-* [Python](https://maven.apache.org/) - Dependency Management
-* [PySerial](https://rometools.github.io/rome/) - Used to generate RSS Feeds
+* [OpenCV](https://www.opencv.org/) - Computer Vision
+* [Python](https://www.python.org/)
+* [PySerial](https://pythonhosted.org/pyserial/) - Remote communications
 
 ## Contributing
 
-Not currently accepting public contributions
+No current contribution system, contact [John](https://github.com/Museus) if you wish to contribute.
 
 ## Authors
 
